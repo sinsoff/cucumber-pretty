@@ -59,7 +59,7 @@ class PrettyFormatter extends Formatter {
         const tags = feature.tags.map(tag => tag.name).join(' ');
         if (tags) this.logn(options.colorFns.tag(tags));
 
-        this.logn(`${this.color(feature.keyword, 'magenta', 'bold')}: ${feature.name}`);
+        this.logn(`${this.color(feature.keyword, 'bold')}: ${feature.name}`);
 
         if (feature.description && this.descriptionEnabled) this.logn(`${n}${feature.description}`);
 
@@ -74,39 +74,15 @@ class PrettyFormatter extends Formatter {
       const line = Math.min(...pickle.locations.map(location => location.line));
       const { keyword } = gherkinDocument.feature.children.find(child => child.location.line === line);
 
-      this.logn(`${this.color(keyword, 'magenta', 'bold')}: ${pickle.name}`, 2);
-    });
-
-    options.eventBroadcaster.on('test-step-started', (event) => {
-      const { gherkinKeyword, pickleStep } = options.eventDataCollector.getTestStepData(event);
-      if (!gherkinKeyword) return; // hook
-
-      this.logn(`${this.color(gherkinKeyword.trim(), 'bold')} ${pickleStep.text}`, 4);
-
-      pickleStep.arguments.forEach((argument) => {
-        if (argument.content) {
-          this.logn(`"""${n}${argument.content}${n}"""`, 6);
-        }
-
-        if (argument.rows) {
-          const datatable = new Table(table);
-          datatable.push(...argument.rows.map(row => row.cells.map(cell => cell.value)));
-          this.logn(datatable, 6);
-        }
-      });
+      this.logn(`${this.color(keyword, 'bold')}: ${pickle.name}`, 2);
     });
 
     options.eventBroadcaster.on('test-step-finished', (event) => {
-      const { testStep: { result: { status, exception } } } = options.eventDataCollector.getTestStepData(event);
+      const { gherkinKeyword, pickleStep, testStep: { result: { status } } } = options.eventDataCollector.getTestStepData(event);
+      if (!gherkinKeyword) return; // hook
 
-      if (status !== 'passed') {
-        this.logn(options.colorFns[status](`${marks[status]} ${status}`), 4);
-      }
+      this.logn(options.colorFns[status](`${marks[status]} ${this.color(gherkinKeyword.trim(), 'bold')} ${pickleStep.text}`), 2);
 
-      if (exception) {
-        const error = formatterHelpers.formatError(exception, options.colorFns);
-        this.logn(error, 6);
-      }
     });
 
     options.eventBroadcaster.on('test-run-finished', (event) => {
